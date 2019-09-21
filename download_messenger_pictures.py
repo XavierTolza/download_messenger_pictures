@@ -1,8 +1,9 @@
 #!python3
+import re
 from os import mkdir
 from os.path import isdir, join
 
-from fbchat import Client
+from fbchat import Client, VideoAttachment
 from fbchat.models import ImageAttachment
 import urllib3
 
@@ -18,12 +19,21 @@ def download_pictures(user, password, thread_id, output_folder, msg_limit=100):
     msg_list = client.fetchThreadMessages(thread_id=thread_id, limit=msg_limit)
     for msg in msg_list:
         for att in msg.attachments:
-            if not type(att) == ImageAttachment:
+            att_valid = att.__class__.__name__ in "ImageAttachment, VideoAttachment".split(", ")
+            if not att_valid:
                 continue
             url = client.fetchImageUrl(att.uid)
             data = http.request("GET", url=url, preload_content=False)
             data = data.read()
-            output_filename = join(output_folder, att.uid + "." + att.original_extension)
+            try:
+                ext = att.original_extension
+            except AttributeError:
+                ext = re.match(".+\.([a-z0-9]{3,4})\?.+", url)
+                if ext is None:
+                    ext = "unkown"
+                else:
+                    ext = ext.groups()[0]
+            output_filename = join(output_folder, att.uid + "." + ext)
             print("Downloading %s" % output_filename)
             with open(output_filename, "wb") as f:
                 f.write(data)
