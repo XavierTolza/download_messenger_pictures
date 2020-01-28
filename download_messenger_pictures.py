@@ -16,7 +16,11 @@ def download_pictures(user, password, thread_id, output_folder, msg_limit=100):
 
     client = Client(user, password)
 
-    msg_list = client.fetchThreadMessages(thread_id=thread_id, limit=msg_limit)
+    if thread_id is None:
+        thread = client.fetchThreadList()[0]
+        msg_list = client.fetchThreadMessages(thread.uid, msg_limit)
+    else:
+        msg_list = client.fetchThreadMessages(thread_id=thread_id, limit=msg_limit)
     for msg in msg_list:
         for att in msg.attachments:
             att_valid = att.__class__.__name__ in "ImageAttachment, VideoAttachment".split(", ")
@@ -45,7 +49,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("email", help="Email of your facebook account")
     parser.add_argument("password", help="Password of your facebook account")
-    parser.add_argument("thread_id", help="ID of your conversation")
+    parser.add_argument("-t", "--thread_id", help="ID of your conversation (default is latest)", default=None)
     parser.add_argument("--output", '-o', help="Output folder where pictures will be stored", default="./pictures")
     parser.add_argument('--limit', "-l", help="Limit on the number of messages to search for pictures", default=100)
 
